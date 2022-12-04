@@ -46,8 +46,7 @@ pub fn main() anyerror!void {
         var r1 = try Range.init_from_string(r1_string);
         var r2 = try Range.init_from_string(r2_string);
 
-        if (r1.contains(r2) or r2.contains(r1)) count += 1;
-        // try stdout.print("{s}: {s} {s}\n", .{line, first, second});
+        if (r1.overlaps(r2)) count += 1;
     }
 
     try stdout.print("Day 4 Solution: {d}\n", .{count});
@@ -70,6 +69,15 @@ const Range = struct {
     pub fn contains(self: Range, other: Range) bool {
         return self.begin <= other.begin and self.end >= other.end;
     }
+
+    //returns true if ranges overlap - commutative
+    pub fn overlaps(self: Range, other: Range) bool {
+        const first = self.begin < other.begin;
+        if(first){
+            return other.begin <= self.end;
+        }
+        else return self.begin <= other.end;
+    }
 };
 
 test "range" {
@@ -90,4 +98,17 @@ test "range" {
     try testing.expect(r5.contains(r));
     try testing.expect(!r2.contains(r));
     try testing.expect(!r3.contains(r));
+
+    try testing.expect(r.overlaps(r2));
+    try testing.expect(r.overlaps(r3));
+    try testing.expect(r.overlaps(r4));
+    try testing.expect(r.overlaps(r4));
+
+    const o1 = try Range.init_from_string("2-4");
+    const o2 = try Range.init_from_string("6-8");
+    const o3= try Range.init_from_string("1-1");
+
+    try testing.expect(!o1.overlaps(o2));
+    try testing.expect(!o1.overlaps(o3));
+    try testing.expect(o1.overlaps(o1));
 }

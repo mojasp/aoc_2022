@@ -35,12 +35,11 @@ pub fn main() anyerror!void {
     const stdout = std.io.getStdOut().writer();
 
     var acc: i64 = 0;
-    for (lines.items) |line| {
-        const compartment_size = line.len / 2;
-        const first = line[0..compartment_size];
-        const second = line[compartment_size..line.len];
-        
-        var common = try find_common(first, second);
+    var group: usize =0;
+
+
+    while  (group < lines.items.len) : (group += 3) {
+        var common = try find_common(lines.items[group], lines.items[group+1], lines.items[group+2]);
 
         // try stdout.print("{s}: {s} {s}\n", .{line, first, second});
         acc += try get_Priority(common);
@@ -50,10 +49,14 @@ pub fn main() anyerror!void {
     try stdout.print("Day 3 Solution: {d}\n", .{acc});
 }
 
-pub fn find_common(compart1: []const u8, compart2: []const u8) !u8 {
-    for(compart1) |it1| {
-        for (compart2) |it2| {
-            if (it1 == it2) return it1;
+pub fn find_common(first: []const u8, second: []const u8, third: [] const u8) !u8 {
+    for(first) |it1| {
+        for (second) |it2| {
+            if(it1 == it2) {
+                for (third) |it3| {
+                    if (it1 == it3) return it1;
+                }
+            }
         }
     }
     return error.NotFound;

@@ -37,12 +37,14 @@ pub fn main() anyerror!void {
     const stdout = std.io.getStdOut().writer();
 
     var s = try State.init(arena.allocator());
+    try stdout.print("Crates: {d}\n", .{s.numcrates()});
     for (lines.items[10..]) |line| {
-        try stdout.print("{s}\n", .{line});
+        std.debug.print("{s}\n", .{line});
         var instruction = try Instruction.from_line(line);
         try s.process(instruction);
     }
 
+    try stdout.print("Crates: {d}\n", .{s.numcrates()});
     try stdout.print("Day 5 Solution: {s}\n", .{try s.getResult(arena.allocator())});
 }
 
@@ -91,7 +93,7 @@ const State = struct {
             std.ArrayList(u8).init(allocator),
         } };
         try self.stacks[1].appendSlice("PFMQWGRT");
-        try self.stacks[2].appendSlice("RFH");
+        try self.stacks[2].appendSlice("HFR");
         try self.stacks[3].appendSlice("PZRVGHSD");
         try self.stacks[4].appendSlice("QHPBFWG");
         try self.stacks[5].appendSlice("PSMJH");
@@ -103,18 +105,40 @@ const State = struct {
     }
 
     pub fn process(self: *State, instr: Instruction) !void {
+        var from = self.*.stacks[instr.from];
+        const idx: i64 = @intCast(i64, from.items.len) - instr.amount;
+
+        std.debug.print("{d} {d} {d}\n", .{ from.items.len, instr.amount, idx });
+
+        const items = from.items[@intCast(usize, idx)..];
+
+        std.debug.print("to: {s} => ", .{self.*.stacks[instr.to].items});
+
+        try self.*.stacks[instr.to].appendSlice(items);
+
+        std.debug.print("{s}\n", .{self.*.stacks[instr.to].items});
+        std.debug.print("from: {s} => ", .{self.*.stacks[instr.from].items});
+
         var i = instr.amount;
         while (i > 0) : (i -= 1) {
-            var item = self.*.stacks[@as(usize, instr.from)].pop();
-            try self.*.stacks[instr.to].append(item);
+            _ = self.stacks[instr.from].pop();
         }
+
+        std.debug.print("{s}\n", .{self.*.stacks[instr.from].items});
     }
 
     pub fn getResult(self: State, allocator: Allocator) ![]u8 {
         var acc = try std.fmt.allocPrint(allocator, "{s}", .{""});
-        for(self.stacks[1..]) |s| {
-            if(s.items.len > 0)
-                acc = try  std.fmt.allocPrint(allocator, "{s}{c}", .{acc, s.items[s.items.len-1]});
+        for (self.stacks[1..]) |s| {
+            std.debug.print("{c}\n", .{s.items[s.items.len - 1]});
+            acc = try std.fmt.allocPrint(allocator, "{s}{c}", .{ acc, s.items[s.items.len - 1] });
+        }
+        return acc;
+    }
+    pub fn numcrates(self: State) i64 {
+        var acc: i64 = 0;
+        for (self.stacks[1..]) |s| {
+            acc += @intCast(i64, s.items.len);
         }
         return acc;
     }

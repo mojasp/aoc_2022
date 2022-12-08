@@ -1,5 +1,6 @@
 const std = @import("std");
 const file = @embedFile("input.txt");
+const assert = std.debug.assert;
 
 var data: [99][99]i8 = undefined;
 
@@ -16,75 +17,67 @@ pub fn main() !void {
         }
     }
 
-    var cnt: i64 = 0;
-
+    var best_score : usize = 0;
     for (data) |line, y| {
-        for (line) |elem, x| {
-            _ = elem;
-            // std.debug.print("{d} {d}: {d}\n", .{x, y, elem});
-            if (visible_up(x, y)) {
-                // std.debug.print("{s}\n", .{"up"});
-                cnt += 1;
-                continue;
-            }
-            if (visible_down(x, y)) {
-                // std.debug.print("{s}\n", .{"down"});
-                cnt += 1;
-                continue;
-            }
-            if (visible_left(x, y)) {
-                // std.debug.print("{s}\n", .{"left"});
-                cnt += 1;
-                continue;
-            }
-            if (visible_right(x, y)) {
-                // std.debug.print("{s}\n", .{"right"});
-                cnt += 1;
-                continue;
-            }
+        for (line) |_ , x| {
+            const score = look_up(x, y) * look_down(x,y) * look_left(x,y) * look_right(x,y);
+            if(score > best_score)
+                best_score = score;
         }
     }
-    std.debug.print("{d}\n", .{cnt});
+    std.debug.print("{d}\n", .{best_score});
 }
 
-pub fn visible_up(x: usize, y: usize) bool {
-    if (y == 0) return true;
+pub fn look_up(x: usize, y: usize) usize {
+    if (y == 0) return 0;
 
     const elem = data[x][y];
     var j: usize = 0;
-    while (j < y) : (j += 1) {
-        if (data[x][j] >= elem) return false;
+    while (true) {
+        std.debug.print("{d}\n", .{j});
+        j+=1;
+        var idx = y - j;
+        if (data[x][idx] >= elem) return j;
+        if(idx == 0) return j;
     }
-    return true;
 }
-pub fn visible_down(x: usize, y: usize) bool {
-    if (y == 98) return true;
+
+pub fn look_down(x: usize, y: usize) usize {
+    if (y == 98) return 0;
 
     const elem = data[x][y];
-    var j: usize = y + 1;
-    while (j < 99) : (j += 1) {
-        if (data[x][j] >= elem) return false;
+    var j: usize = 0;
+    while (true) {
+        j+=1;
+        var idx = y+j;
+        if (data[x][idx] >= elem) return j;
+        if(idx == 98) return j;
     }
-    return true;
 }
-pub fn visible_left(x: usize, y: usize) bool {
-    if (x == 0) return true;
+
+pub fn look_left(x: usize, y: usize) usize {
+    if (x == 0) return 0;
 
     const elem = data[x][y];
     var i: usize = 0;
-    while (i < x) : (i += 1) {
-        if (data[i][y] >= elem) return false;
+    while (true) {
+        i+=1;
+        var idx = x - i;
+        if (data[idx][y] >= elem) return i;
+        if(idx == 0) return i;
     }
-    return true;
 }
-pub fn visible_right(x: usize, y: usize) bool {
-    if (x == 98) return true;
+
+pub fn look_right(x: usize, y: usize) usize {
+    if (x == 98) return 0;
+    assert(x < 98);
 
     const elem = data[x][y];
-    var i: usize = x + 1;
-    while (i < 99) : (i += 1) {
-        // std.debug.print("x={d} y={d}: i={d}\n", .{ x, y, i });
-        if (data[i][y] >= elem) return false;
+    var i: usize = 0;
+    while (true) {
+        i+=1;
+        var idx = x + i;
+        if (data[idx][y] >= elem) return i;
+        if(idx == 98) return i;
     }
-    return true;
 }

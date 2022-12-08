@@ -28,8 +28,16 @@ pub fn main() anyerror!void {
         } else unreachable;
     }
 
-    const result = try filesystem.solve();
-    std.debug.print("{d}\n", .{result});
+    const result = try filesystem.solve1();
+    std.debug.print("Part 1: {d}\n", .{result});
+
+    const diskspace = 70000000;
+    const total_needed_for_update = 30000000;
+    const occupied = try filesystem.dirSize(filesystem.root);
+    const available = diskspace - occupied;
+    const needed_for_update = total_needed_for_update - available;
+    std.debug.print("need {d} addiional space for update\n", .{needed_for_update});
+    std.debug.print("Part 2: {d}\n", .{try filesystem.solve2(needed_for_update)});
 }
 
 const cd_cmd = union(enum) { up, root, down: []const u8 };
@@ -90,7 +98,33 @@ const fs = struct {
         }
     }
 
-    pub fn solve(self: *fs) !i64 {
+    pub fn solve2(self: *fs, limit: i64) !i64 {
+        //DFS over fs
+        var candidate :i64 = 70000000;
+        var to_visit = std.ArrayList(*inode).init(self.alloc);
+        try to_visit.append(self.root);
+
+        while (to_visit.popOrNull()) |node| {
+            switch (node.inode_type) {
+                .dir => |map| {
+                    //SOLVE for current directory
+                    const sz = try self.dirSize(node);
+                    if(sz >= limit and sz < candidate) candidate = sz;
+
+                    //add remaining directories for DFS
+                    var it = map.iterator();
+                    while (it.next()) |v| {
+                        try to_visit.append(v.value_ptr);
+                    }
+                },
+                .file => {
+                },
+            }
+        }
+        return candidate;
+    }
+
+    pub fn solve1(self: *fs) !i64 {
         //Doing 2 nested DFS is pretty stupid, but still runs in < 0.5 seconds...
         const limit = 100000;
         var count : i64 = 0;
@@ -102,8 +136,7 @@ const fs = struct {
             switch (node.inode_type) {
                 .dir => |map| {
                     //SOLVE for current directory
-                    self.current_dir = node;
-                    const sz = try self.dirSize();
+                    const sz = try self.dirSize(node);
                     if(sz <= limit ) count += sz;
 
                     //add remaining directories for DFS
@@ -119,11 +152,11 @@ const fs = struct {
         return count;
     }
 
-    pub fn dirSize(self: fs) !i64 {
+    pub fn dirSize(self: fs, dir: *inode) !i64 {
         var count : i64 = 0;
         //DFS over fs
         var to_visit = std.ArrayList(*inode).init(self.alloc);
-        try to_visit.append(self.current_dir);
+        try to_visit.append(dir);
 
         while (to_visit.popOrNull()) |node| {
             switch (node.inode_type) {

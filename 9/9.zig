@@ -37,45 +37,15 @@ const simulation = struct {
         }
 
         var i: usize = 1;
-        std.debug.print("---next ---\n", .{});
         while (i <= 9) : (i += 1) {
             const prev_idx = i - 1;
-
             const vecToHead = vec2{ .x = self.knots[prev_idx].x - self.knots[i].x, .y = self.knots[prev_idx].y - self.knots[i].y }; //swapped this
-            std.debug.print("i: {d}, from:{any}, to:{any}, diff:{any}\n", .{ i, self.knots[i], self.knots[prev_idx], vecToHead });
 
-            if (try abs(vecToHead.x) <= 1 and try abs(vecToHead.y) <= 1)
-                continue;
-
-            //Same row/col
-            if (try abs(vecToHead.x) == 0) {
-                try adjust_straight(&self.knots[i].y, self.knots[prev_idx].y);
-                continue;
+            if (vecToHead.x*vecToHead.x + vecToHead.y * vecToHead.y > 2) {
+                //Moving the head in all cases is equivalent to moving one step (=math.sign()) towards the gradient (in both coordinates)
+                self.knots[i].x += std.math.sign(vecToHead.x);
+                self.knots[i].y += std.math.sign(vecToHead.y);
             }
-            if (try abs(vecToHead.y) == 0) {
-                try adjust_straight(&self.knots[i].x, self.knots[prev_idx].x);
-                continue;
-            }
-
-            //diagonal
-            const absDiff = try abs(vecToHead.x) - try abs(vecToHead.y);
-            if (absDiff == 0) {
-                //perfectly diagonal
-                if (vecToHead.x > 0) {
-                    self.knots[i].x += 1;
-                } else self.knots[i].x -= 1;
-                if (vecToHead.y > 0) {
-                    self.knots[i].y += 1;
-                } else self.knots[i].y -= 1;
-            } else if (absDiff == 1) {
-                //set to same row, then adjust y
-                self.knots[i].y = self.knots[prev_idx].y;
-                try adjust_straight(&self.knots[i].x, self.knots[prev_idx].x);
-            } else if (absDiff == -1) {
-                //set to same col, then adjust x
-                self.knots[i].x = self.knots[prev_idx].x;
-                try adjust_straight(&self.knots[i].y, self.knots[prev_idx].y);
-            } else unreachable;
         }
     }
 
@@ -110,11 +80,6 @@ pub fn main() !void {
     }
 
     var sim = simulation{ .knots = std.mem.zeroes([10]vec2), .visited_set = std.AutoHashMap(vec2, void).init(alloc) };
-
-    assert(sim.knots[0].x == 0);
-    assert(sim.knots[0].y == 0);
-    assert(sim.knots[9].x == 0);
-    assert(sim.knots[9].y == 0);
 
     for (motions.items) |m| {
         try sim.moveHead(m);
